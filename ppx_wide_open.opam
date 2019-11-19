@@ -1,0 +1,18 @@
+opam-version: "2.0"
+build: [
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name] {with-test}
+]
+depends: [
+  "ocaml" {>= "4.04.0"}
+  "ppx_deriving"
+  "ppx_tools"
+  "ppxfind"
+  "dune"
+]
+synopsis:
+  "todo"
+description: """
+todo.
+"""
