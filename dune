@@ -1,0 +1,21 @@
+(library
+ (name openwide)
+ (public_name openwide)
+ (synopsis "PPX syntax extension for litterals")
+ (modules ppx_wide_open.ml)
+ (libraries
+   compiler-libs.common
+   ocaml-migrate-parsetree
+ )
+ (kind ppx_rewriter)
+)
+
+(alias
+ (name   runtest)
+ (deps   (:x README.md) test/prelude.ml (package zarith-ppx))
+ (action (progn
+           (run ocaml-mdx test
+               --prelude test/prelude.ml
+               --direction=infer-timestamp %{x})
+           (diff? %{x} %{x}.corrected)
+)))
