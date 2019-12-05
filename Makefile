@@ -8,11 +8,8 @@ all: exe
 test: exe
 	./$(EXE)
 
-exe: ppx runtime
-	$(CC) runtime.cma test.ml -ppx "./$(PPX) -as-ppx" -o $(EXE) -linkpkg -package zarith
-
-runtime:
-	ocamlc -a runtime/replace.ml -o runtime.cma
+exe: ppx
+	$(CC) wideopen.ml test.ml -ppx "./$(PPX) -as-ppx" -o $(EXE) -linkpkg -package zarith
 
 ppx:
 	$(CC) -package ppx_tools.metaquot ppx_wide_open.ml -linkpkg -package $(LIBS) -o $(PPX)

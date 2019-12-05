@@ -1,3 +1,5 @@
+open Wideopen
+
 let mid a b =
-  let open (Float:Replace.Decimals) in
-  a +. (b -. a) /. (parse "2")
+  let open%replace.float Float in
+  a +. (b -. a) /. 2.

@@ -7,14 +7,14 @@ module type Integers = sig
   val sub : t -> t -> t
   val mul : t -> t -> t
   val div : t -> t -> t
-
-  val pow : t -> t -> t
+  val neg : t -> t
 
   (* operators *)
   val ( + ) : t -> t -> t
   val ( - ) : t -> t -> t
   val ( * ) : t -> t -> t
   val ( / ) : t -> t -> t
+  val ( ~- ) : t -> t
 
   (* printing *)
   val to_string : t -> string
@@ -33,14 +33,14 @@ module type Decimals = sig
   val sub : t -> t -> t
   val mul : t -> t -> t
   val div : t -> t -> t
-
-  val pow : t -> int -> t
+  val neg : t -> t
 
   (* operators *)
   val ( +. ) : t -> t -> t
   val ( -. ) : t -> t -> t
   val ( *. ) : t -> t -> t
   val ( /. ) : t -> t -> t
+  val ( ~-. ) : t -> t
 
   (* int conversion *)
   val round_up   : t -> int
@@ -64,20 +64,21 @@ module type All = sig
   val sub : t -> t -> t
   val mul : t -> t -> t
   val div : t -> t -> t
-
-  val pow : t -> t -> t
+  val neg : t -> t
 
   (* operators *)
   val ( +. ) : t -> t -> t
   val ( -. ) : t -> t -> t
   val ( *. ) : t -> t -> t
   val ( /. ) : t -> t -> t
+  val ( ~-. ) : t -> t
 
   (* both integer and float operators can be used *)
   val ( + ) : t -> t -> t
   val ( - ) : t -> t -> t
   val ( * ) : t -> t -> t
   val ( / ) : t -> t -> t
+  val ( ~- ) : t -> t
 
   (* printing *)
   val to_string : t -> string
@@ -85,4 +86,20 @@ module type All = sig
 
   (* parsing *)
   val parse : string -> t
+end
+
+module Float = struct
+  include Float
+
+  let round_down x = x |> floor |> int_of_float
+  let round_up x = x |> ceil |> int_of_float
+
+  let ( +. ) = add
+  let ( *. ) = mul
+  let ( /. ) = div
+  let ( -. ) = sub
+  let ( ~-. ) = neg
+
+  let print = Format.pp_print_float
+  let parse = float_of_string
 end
