@@ -103,3 +103,23 @@ module Float = struct
   let print = Format.pp_print_float
   let parse = float_of_string
 end
+
+module Rationals = struct
+
+  let round_down = Q.to_int
+  let round_up x =
+    let x' = round_down x in
+    if (Q.of_int x') = x then x'
+    else x' + 1
+
+  include Q
+
+  let ( +. ) = add
+  let ( *. ) = mul
+  let ( /. ) = div
+  let ( -. ) = sub
+  let ( ~-. ) = neg
+
+  let print = Format.pp_print_float
+  let parse = of_string
+end
