@@ -3,8 +3,8 @@ open Ast_mapper
 open Ast_helper
 open Ast_convenience
 
-(* Removes all occurences of the character '_' to make the parse
-   function of the module bein used more resilient *)
+(* Removes all occurences of the character '_' to make the 'parse'
+   function of the module being used more resilient *)
 let remove__ s =
   let nb_occ = ref 0 in
   String.iter (function '_' -> incr nb_occ | _ -> ()) s;
@@ -29,57 +29,47 @@ let replace const mode loc =
   | c,_ -> Exp.constant ~loc c
 
 (* replaces both float and integer litterals [lit] by [parse "lit"]*)
-let parse_mapper_const _ mode =
+let parse_mapper_const mode =
   let handle mapper = function
     | {pexp_desc = Pexp_constant(x); pexp_loc; _ }-> replace x mode pexp_loc
     |  x -> default_mapper.expr mapper x
   in
   {default_mapper with expr = handle}
 
-(* when a [let open%replace.integers M in e] is met,
-   rewrites [e] using parse_mapper *)
-let expr_mapper mapper argv =
-  let exprf default_expr mapper = function
-    | {pexp_desc =
-         Pexp_extension(
-             ({txt="replace.int";_}),
-             PStr([{pstr_desc=
-                      Pstr_eval({pexp_desc=Pexp_open(op,exp);_} as pstr,
-                                attr);
-                    _}]))
-      ; pexp_loc; _} ->
-       let ofs = parse_mapper_const argv `Ints in
-       let exp' = ofs.expr ofs exp in
-       let ope = Pexp_open(op,exp') in
-       {pstr with pexp_desc = ope}
-    | {pexp_desc =
-         Pexp_extension(
-             ({txt="replace.float";_}),
-             PStr([{pstr_desc=
-                      Pstr_eval({pexp_desc=Pexp_open(op,exp);_} as pstr,
-                                attr);
-                    _}]))
-      ; pexp_loc; _} ->
-       let ofs = parse_mapper_const argv `Floats in
-       let exp' = ofs.expr ofs exp in
-       let ope = Pexp_open(op,exp') in
-       {pstr with pexp_desc = ope}
-
-    | {pexp_desc =
-         Pexp_extension(
-             ({txt="replace.all";_}),
-             PStr([{pstr_desc=
-                      Pstr_eval({pexp_desc=Pexp_open(op,exp);_} as pstr,
-                                attr);
-                    _}]))
-      ; pexp_loc; _} ->
-       let ofs = parse_mapper_const argv `All in
-       let exp' = ofs.expr ofs exp in
-       let ope = Pexp_open(op,exp') in
-       {pstr with pexp_desc = ope}
-
-    |  x -> default_expr mapper x
+(* search for a given attribute *)
+let find_attribute attrs name =
+  let rec aux ((contains, rest) as acc) = function
+    | [] -> acc
+    | h::tl -> if h.attr_name.txt = name then true,(List.rev rest) @ tl
+               else aux (false,h::rest) tl
   in
-  {mapper with expr = exprf mapper.expr}
+  aux (false,[]) attrs
 
-let () = register "wide" (expr_mapper default_mapper)
+(* when a [let open%replace.int M in e] is met,
+   rewrites [e] using parse_mapper *)
+let replace_mapper _ =
+  let handle_expr mapper expr =
+    match expr.pexp_desc with
+    | Pexp_open(op,exp) ->
+       (try
+          let mode,rest =
+            let res,rest = find_attribute expr.pexp_attributes "replace.int" in
+            if res then `Ints,rest
+            else
+              let res,rest = find_attribute expr.pexp_attributes "replace.float" in
+              if res then `Floats,rest
+              else
+                let res,rest = find_attribute expr.pexp_attributes "replace.all" in
+                if res then `All,rest
+                else raise Exit
+          in
+          let ofs = parse_mapper_const mode in
+          let exp' = ofs.expr ofs exp in
+          let ope = Pexp_open(op,exp') in
+          {expr with pexp_desc = ope; pexp_attributes = rest}
+        with Exit -> expr)
+    |  _ -> default_mapper.expr mapper expr
+  in
+  {default_mapper with expr = handle_expr}
+
+let () = register "wide" replace_mapper

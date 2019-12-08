@@ -104,7 +104,7 @@ module Float = struct
   let parse = float_of_string
 end
 
-module Rationals = struct
+module Zarith_Q = struct
 
   let round_down = Q.to_int
   let round_up x =
@@ -121,5 +121,10 @@ module Rationals = struct
   let ( ~-. ) = neg
 
   let print = Format.pp_print_float
+  let parse = of_string
+end
+
+module Zarith_Z = struct
+  include Z
   let parse = of_string
 end
