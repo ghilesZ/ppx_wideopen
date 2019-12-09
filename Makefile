@@ -9,7 +9,7 @@ test: exe
 	./$(EXE)
 
 exe: ppx
-	$(CC) wideopen.ml test.ml -ppx "./$(PPX) -as-ppx" -o $(EXE) -linkpkg -package zarith
+	$(CC) test.ml -ppx "./$(PPX) -as-ppx" -o $(EXE) -linkpkg -package zarith
 
 ppx:
 	$(CC) -package ppx_tools.metaquot ppx_wide_open.ml -linkpkg -package $(LIBS) -o $(PPX)
