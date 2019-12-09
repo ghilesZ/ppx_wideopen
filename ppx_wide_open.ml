@@ -51,7 +51,7 @@ let get_fname payload loc =
              Pstr_eval
                ({pexp_desc =
                    Pexp_apply
-                     ({pexp_desc = Pexp_ident {txt = Lident "with"};_},
+                     ({pexp_desc = Pexp_ident {txt = Lident "using"};_},
                       [(Nolabel,{pexp_desc = Pexp_ident{txt=Lident fname};_})]);
                  _},_)}] -> fname
   | _ -> Format.printf "%a\n%!" Location.print_loc loc;
