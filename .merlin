@@ -1,4 +1,0 @@
-PKG compiler-libs.common
-PKG zarith
-FLG -ppx /home/ziat/gg/trucs/ppx_wide_open/preprocess
-PKG ppx_tools ppx_tools.metaquot
