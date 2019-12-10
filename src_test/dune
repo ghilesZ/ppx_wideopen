@@ -1,0 +1,4 @@
+(test
+  (name test)
+  (preprocess (staged_pps ppx_wideopen))
+  (libraries zarith))

@@ -1,7 +1,7 @@
+open Migrate_parsetree.Ast_408
 open Parsetree
 open Ast_mapper
 open Ast_helper
-open Ast_convenience
 
 (* Removes all occurences of the character '_' to make the 'parse'
    function of the module being used more resilient *)
@@ -16,11 +16,11 @@ let remove__ s =
   Bytes.to_string s'
 
 (* given an ast fragment representing a string 'c', builds the ast
-   fragment for '(parse c)' *)
+   fragment for '(fname c)' *)
 let parse c fname loc =
   let c = remove__ c in
-  let id = Exp.ident (lid fname ) in
-  Exp.apply ~loc:loc id [Nolabel,str c]
+  let id = Exp.ident (Location.mkloc (Longident.parse fname) loc) in
+  Exp.apply ~loc:loc id [Nolabel,Exp.constant (Pconst_string (c,None))]
 
 let replace const name fname loc =
   match const,name with
@@ -51,15 +51,15 @@ let get_fname payload loc =
              Pstr_eval
                ({pexp_desc =
                    Pexp_apply
-                     ({pexp_desc = Pexp_ident {txt = Lident "using"};_},
-                      [(Nolabel,{pexp_desc = Pexp_ident{txt=Lident fname};_})]);
-                 _},_)}] -> fname
+                     ({pexp_desc = Pexp_ident {txt = Lident "using";_};_},
+                      [(Nolabel,{pexp_desc = Pexp_ident{txt=Lident fname;_};_})]);
+                 _},_); _}] -> fname
   | _ -> Format.printf "%a\n%!" Location.print_loc loc;
          failwith "wrong payload for parse attribute."
 
 (* when a [let open[parse.int] M in e] is met,
    rewrites [e] using parse_mapper *)
-let expr_mapper _ =
+let expr_mapper =
   let handle_expr mapper expr =
     match expr.pexp_desc with
     | Pexp_open(op,exp) ->
@@ -78,6 +78,7 @@ let expr_mapper _ =
   in
   {default_mapper with expr = handle_expr}
 
-
-
-let () = register "wide" expr_mapper
+let () =
+  let open Migrate_parsetree in
+  Driver.register ~name:"ppx_openwide" ~args:[]
+    Versions.ocaml_408 (fun _config _cookies -> expr_mapper)
