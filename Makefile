@@ -12,7 +12,7 @@ exe: ppx
 	$(CC) test.ml -ppx "./$(PPX) -as-ppx" -o $(EXE) -linkpkg -package zarith
 
 ppx:
-	$(CC) -package ppx_tools.metaquot ppx_wide_open.ml -linkpkg -package $(LIBS) -o $(PPX)
+	$(CC) -package ppx_tools.metaquot ppx_wideopen.ml -linkpkg -package $(LIBS) -o $(PPX)
 
 clean:
 	rm -f `find . -name "*.o"`

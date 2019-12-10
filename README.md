@@ -1,17 +1,17 @@
 # Why Wideopen?
 The shadowing trick allows the users to overwrite the usual arithmetic
 operators ````(+, -, ...)```` with their own by simply doing ````let
-open My_module in ````. However the litterals in the program are still
-interpreted as integer or floats by OCaml's parser which forces the
-programmer to write boilerplate code to handle these cases.
+open My_module in ...````. However the litterals in the program are
+still interpreted as integer or floats by OCaml's parser which forces
+the programmers to write boilerplate code to handle these cases.
 
 Wideopen is a syntax-extension that allows you to switch easily the
 numeric representation used for integers and floats litterals: it
 allows you to use a custom parsing utility for OCaml's litterals using
 by default the `of_string` function of the specified module.
 
-For example, the following piece of code which uses the Zarith
-iibrary computes the number of solutions of a quadratic equation:
+For example, the following piece of code (which uses the Zarith
+library) computes the number of solutions of a quadratic equation:
 
 ````OCaml
   let nb_solutions a b c =
@@ -36,9 +36,10 @@ Which is syntactic sugar for:
 ## How it works?
 Whenever an ````[@replace...]```` annotation is met, the litterals
 ````l```` appearing in the sub-expression are replaced with
-````(of_string l)````. Also, as it works on the Parsetree of OCaml, we
-are able to handle litterals of arbitrary size (e.g. greater than
-2^64), given that the parsing function being used accepts it.
+````(of_string l)````. Also, note that as this extension works on the
+Parsetree of OCaml, we are able to handle litterals of arbitrary size
+(e.g. greater than 2^64), given that the parsing function being used
+accepts it.
 
 ## The different annotations:
 Wideopen provides three different annotation:
@@ -53,7 +54,6 @@ Note that the latter annotation allows you in particular to manipulate
 "integers" and "floats" indiferently as a "bigger type" (Zarith's
 rationals using the ````Q```` module for example) without having to
 care about int-float conversion and operators.
-
 
 ## Customizing the parsing utility:
 By default, Wideopen uses the ````of_string```` of the specified
