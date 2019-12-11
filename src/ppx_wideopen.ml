@@ -29,7 +29,7 @@ let replace const name fname loc =
   | c,_ -> Exp.constant ~loc c
 
 (* replaces both float and integer litterals [lit] by [parse "lit"]*)
-let parse_mapper_const name fname =
+let parse_mapper name fname =
   let handle mapper = function
     | {pexp_desc = Pexp_constant x; pexp_loc;_}-> replace x name fname pexp_loc
     |  x -> default_mapper.expr mapper x
@@ -55,18 +55,18 @@ let get_fname payload loc =
                       [(Nolabel,{pexp_desc = Pexp_ident{txt=Lident fname;_};_})]);
                  _},_); _}] -> fname
   | _ -> Format.printf "%a\n%!" Location.print_loc loc;
-         failwith "wrong payload for parse attribute."
+         failwith "wrong payload for parse attribute. Should be \"using ident\""
 
 (* when a [let open[parse.int] M in e] is met,
    rewrites [e] using parse_mapper *)
-let expr_mapper =
+let open_wide_mapper =
   let handle_expr mapper expr =
     match expr.pexp_desc with
     | Pexp_open(op,exp) ->
        (match List.find check_attr expr.pexp_attributes with
         | attr ->
            let fname = get_fname attr.attr_payload attr.attr_loc in
-           let ofs = parse_mapper_const attr.attr_name.txt fname in
+           let ofs = parse_mapper attr.attr_name.txt fname in
            let exp' = ofs.expr ofs exp in
            let ope = Pexp_open(op,exp') in
            {expr with pexp_desc = ope;
@@ -76,9 +76,30 @@ let expr_mapper =
         | exception Not_found -> expr)
     |  _ -> default_mapper.expr mapper expr
   in
-  {default_mapper with expr = handle_expr}
+  let handle_str mapper =
+    (* if one str_it is an open[@parse...], then the next str_it will
+       be mapped using handle_expr. Otherwise it keeps using the same mapper *)
+    let rec aux (res,map) = function
+      | [] -> List.rev res
+      | ({pstr_desc=Pstr_open opd;_} as h)::tl ->
+         (match List.find check_attr opd.popen_attributes with
+          | attr ->
+             let fname = get_fname attr.attr_payload attr.attr_loc in
+             let rmv_attrs = List.filter ((<>) attr) opd.popen_attributes in
+             let opd' = {opd with popen_attributes = rmv_attrs} in
+             let h' = {h with pstr_desc = Pstr_open opd'} in
+             let map' = parse_mapper attr.attr_name.txt fname in
+             aux (h'::res,map') tl
+          | exception Not_found -> aux (h::res,map) tl
+         )
+      | h::tl -> let h' = map.structure_item map h in
+                 aux (h'::res,map) tl
+    in
+    aux ([],mapper)
+  in
+  {default_mapper with expr = handle_expr; structure = handle_str}
 
 let () =
   let open Migrate_parsetree in
   Driver.register ~name:"ppx_openwide" ~args:[]
-    Versions.ocaml_408 (fun _config _cookies -> expr_mapper)
+    Versions.ocaml_408 (fun _config _cookies -> open_wide_mapper)
