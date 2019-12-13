@@ -15,19 +15,45 @@ let remove__ s =
       | c   -> Bytes.set s' (i- !nb_cur) c) s;
   Bytes.to_string s'
 
+(* fresh_id generator *)
+let fresh_module_name =
+  let cpt = ref 0 in
+  let name = "PPX_wideopen_alias_" in
+  fun () -> incr cpt; name^(string_of_int !cpt)
+
+(* Builds the ast fragment corresponding to a module alias *)
+let alias_pstr mod_name mod_expr loc =
+  {pstr_desc =
+   Pstr_module
+    {pmb_name = {txt = mod_name; loc};
+     pmb_expr = {pmod_desc = mod_expr; pmod_loc=loc; pmod_attributes=[]};
+     pmb_attributes = [];
+     pmb_loc = loc;
+    };
+  pstr_loc=loc
+ }
+
+(* given a module name [Mn] and a function name [fn], builds the identifier
+   [Mn.fn] *)
+let id modname fname loc=
+  {pexp_desc = Pexp_ident {txt = Ldot (Lident modname, fname); loc};
+   pexp_loc_stack = [];
+   pexp_loc = loc;
+   pexp_attributes = [];}
+
 (* given an ast fragment representing a string 'c', builds the ast
    fragment for '(fname c)' *)
-let parse c fname loc =
+let parse c modname fname loc =
   let c = remove__ c in
-  let id = Exp.ident (Location.mkloc (Longident.parse fname) loc) in
-  Exp.apply ~loc:loc id [Nolabel,Exp.constant (Pconst_string (c,None))]
+  let name = id modname fname loc in
+  Exp.apply ~loc:loc name [Nolabel,Exp.constant (Pconst_string (c,None))]
 
 (* replaces litterals [lit] by [fname "lit"] *)
-let parse_mapper mode fname =
+let parse_mapper mode modulename fname =
   let replace const loc =
     match const,mode with
     | Pconst_integer(c,None),("parse.all" | "parse.int")
-      | Pconst_float(c,None),("parse.all" | "parse.float") -> parse c fname loc
+      | Pconst_float(c,None),("parse.all" | "parse.float") -> parse c modulename fname loc
     | c,_ -> Exp.constant ~loc c
   in
   let handle mapper = function
@@ -57,14 +83,14 @@ let get_fname payload loc =
   | _ -> Format.printf "%a\n%!" Location.print_loc loc;
          failwith "wrong payload for parse attribute. Should be \"using ident\""
 
-(* get the name of the parsing utility using the payload, and remove
-   from the attributes list the one that was used.  We keep the
-   others potential attributes to not interfere with other PPXs.
-   Raises Not_found if no [@parse] attribute was found. *)
-let deal_with_attr attrs =
+(* get the name of the parsing utility using the payload, and removes
+   from the attributes list the one that was used.  We keep the others
+   potential attributes to not interfere with other PPXs.  Raises
+   Not_found if no [@parse] attribute was found. *)
+let deal_with_attr module_name attrs =
   let attr = List.find check_attr attrs in
   let fname = get_fname attr.attr_payload attr.attr_loc in
-  let ofs = parse_mapper attr.attr_name.txt fname in
+  let ofs = parse_mapper attr.attr_name.txt module_name fname in
   ofs,List.filter ((<>) attr) attrs
 
 (* when a [let open[parse.int] M in e] is met,
@@ -74,10 +100,11 @@ let open_wide_mapper =
     match expr.pexp_desc with
     | Pexp_open(op,exp) ->
        (try
-         let ofs,attrs = deal_with_attr expr.pexp_attributes in
-         let exp' = ofs.expr ofs exp in
-         let ope = Pexp_open(op,exp') in
-         {expr with pexp_desc = ope; pexp_attributes = attrs}
+          let modname = fresh_module_name() in
+          let ofs,attrs = deal_with_attr modname expr.pexp_attributes in
+          let exp' = ofs.expr ofs exp in
+          let ope = Pexp_open(op,exp') in
+          {expr with pexp_desc = ope; pexp_attributes = attrs}
         with Not_found -> expr)
     |  _ -> default_mapper.expr mapper expr
   in
@@ -86,15 +113,24 @@ let open_wide_mapper =
        be mapped using parse_mapper. Otherwise it keeps using the same mapper *)
     let rec aux (res,map) = function
       | [] -> List.rev res
-      | ({pstr_desc=Pstr_open opd;_} as h)::tl ->
+      | ({pstr_desc=Pstr_open opd;pstr_loc;_} as h)::tl ->
          (try
-            let map', attrs = deal_with_attr opd.popen_attributes in
-            let opd' = {opd with popen_attributes = attrs} in
+            let m_a = fresh_module_name() in
+            let map', attrs = deal_with_attr m_a opd.popen_attributes in
+            let mod_alias = alias_pstr m_a opd.popen_expr.pmod_desc pstr_loc in
+            let opd' = {opd with popen_attributes = attrs;
+                                 popen_expr = {
+  	                                 pmod_desc = Pmod_ident {txt=Longident.parse m_a; loc=pstr_loc};
+  	                                 pmod_loc = pstr_loc;
+  	                                 pmod_attributes = [];
+                                   }
+                       } in
             let h' = {h with pstr_desc = Pstr_open opd'} in
-            aux (h'::res,map') tl
+            aux (h'::mod_alias::res,map') tl
           with Not_found -> aux (h::res,map) tl)
-      | h::tl -> let h' = map.structure_item map h in
-                 aux (h'::res,map) tl
+      | h::tl ->
+         let h' = map.structure_item map h in
+         aux (h'::res,map) tl
     in
     aux ([],mapper)
   in

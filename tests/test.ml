@@ -7,4 +7,4 @@ let nb_solutions a b c =
   else 0
 
 let _ =
-  Format.printf "%a\n" pp_print  (nb_solutions 2 9999999999999999999999999999999 4)
+  Format.printf "%a\n" pp_print  (nb_solutions 2 9999999999999999999999999999 4)
