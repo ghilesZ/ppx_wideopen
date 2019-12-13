@@ -22,16 +22,16 @@ let parse c fname loc =
   let id = Exp.ident (Location.mkloc (Longident.parse fname) loc) in
   Exp.apply ~loc:loc id [Nolabel,Exp.constant (Pconst_string (c,None))]
 
-let replace const name fname loc =
-  match const,name with
-  | Pconst_integer(c,None),("parse.all" | "parse.int")
-  | Pconst_float(c,None),("parse.all" | "parse.float") -> parse c fname loc
-  | c,_ -> Exp.constant ~loc c
-
-(* replaces both float and integer litterals [lit] by [parse "lit"]*)
-let parse_mapper name fname =
+(* replaces litterals [lit] by [fname "lit"] *)
+let parse_mapper mode fname =
+  let replace const loc =
+    match const,mode with
+    | Pconst_integer(c,None),("parse.all" | "parse.int")
+      | Pconst_float(c,None),("parse.all" | "parse.float") -> parse c fname loc
+    | c,_ -> Exp.constant ~loc c
+  in
   let handle mapper = function
-    | {pexp_desc = Pexp_constant x; pexp_loc;_}-> replace x name fname pexp_loc
+    | {pexp_desc = Pexp_constant x; pexp_loc;_}-> replace x pexp_loc
     |  x -> default_mapper.expr mapper x
   in
   {default_mapper with expr = handle}
@@ -57,41 +57,42 @@ let get_fname payload loc =
   | _ -> Format.printf "%a\n%!" Location.print_loc loc;
          failwith "wrong payload for parse attribute. Should be \"using ident\""
 
+(* get the name of the parsing utility using the payload, and remove
+   from the attributes list the one that was used.  We keep the
+   others potential attributes to not interfere with other PPXs.
+   Raises Not_found if no [@parse] attribute was found. *)
+let deal_with_attr attrs =
+  let attr = List.find check_attr attrs in
+  let fname = get_fname attr.attr_payload attr.attr_loc in
+  let ofs = parse_mapper attr.attr_name.txt fname in
+  ofs,List.filter ((<>) attr) attrs
+
 (* when a [let open[parse.int] M in e] is met,
    rewrites [e] using parse_mapper *)
 let open_wide_mapper =
   let handle_expr mapper expr =
     match expr.pexp_desc with
     | Pexp_open(op,exp) ->
-       (match List.find check_attr expr.pexp_attributes with
-        | attr ->
-           let fname = get_fname attr.attr_payload attr.attr_loc in
-           let ofs = parse_mapper attr.attr_name.txt fname in
-           let exp' = ofs.expr ofs exp in
-           let ope = Pexp_open(op,exp') in
-           {expr with pexp_desc = ope;
-                      (* we keep the others potential attributes *
-                       * to not interfere with other PPXs *)
-                      pexp_attributes = List.filter ((<>) attr) expr.pexp_attributes}
-        | exception Not_found -> expr)
+       (try
+         let ofs,attrs = deal_with_attr expr.pexp_attributes in
+         let exp' = ofs.expr ofs exp in
+         let ope = Pexp_open(op,exp') in
+         {expr with pexp_desc = ope; pexp_attributes = attrs}
+        with Not_found -> expr)
     |  _ -> default_mapper.expr mapper expr
   in
   let handle_str mapper =
     (* if one str_it is an open[@parse...], then the next str_it will
-       be mapped using handle_expr. Otherwise it keeps using the same mapper *)
+       be mapped using parse_mapper. Otherwise it keeps using the same mapper *)
     let rec aux (res,map) = function
       | [] -> List.rev res
       | ({pstr_desc=Pstr_open opd;_} as h)::tl ->
-         (match List.find check_attr opd.popen_attributes with
-          | attr ->
-             let fname = get_fname attr.attr_payload attr.attr_loc in
-             let rmv_attrs = List.filter ((<>) attr) opd.popen_attributes in
-             let opd' = {opd with popen_attributes = rmv_attrs} in
-             let h' = {h with pstr_desc = Pstr_open opd'} in
-             let map' = parse_mapper attr.attr_name.txt fname in
-             aux (h'::res,map') tl
-          | exception Not_found -> aux (h::res,map) tl
-         )
+         (try
+            let map', attrs = deal_with_attr opd.popen_attributes in
+            let opd' = {opd with popen_attributes = attrs} in
+            let h' = {h with pstr_desc = Pstr_open opd'} in
+            aux (h'::res,map') tl
+          with Not_found -> aux (h::res,map) tl)
       | h::tl -> let h' = map.structure_item map h in
                  aux (h'::res,map) tl
     in
