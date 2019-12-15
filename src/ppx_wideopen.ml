@@ -2,6 +2,7 @@ open Migrate_parsetree.Ast_408
 open Parsetree
 open Ast_mapper
 open Ast_helper
+open Location
 
 (* Removes all occurences of the character '_' to make the 'parse'
    function of the module being used more resilient *)
@@ -23,15 +24,11 @@ let fresh_module_name =
 
 (* Builds the ast fragment corresponding to a module alias *)
 let alias_pstr mod_name mod_expr loc =
-  {pstr_desc =
-   Pstr_module
-    {pmb_name = {txt = mod_name; loc};
-     pmb_expr = {pmod_desc = mod_expr; pmod_loc=loc; pmod_attributes=[]};
-     pmb_attributes = [];
-     pmb_loc = loc;
-    };
-  pstr_loc=loc
- }
+  Str.mk ~loc (Pstr_module (Mod.mk ~loc mod_expr |> Mb.mk ~loc mod_name))
+
+(* Builds the ast fragment corresponding to a letmodule alias *)
+let alias_expr mod_name mod_expr loc body =
+ Exp.letmodule ~loc mod_name (Mod.mk ~loc mod_expr) body
 
 (* given a module name [Mn] and a function name [fn], builds the identifier
    [Mn.fn] *)
@@ -80,7 +77,7 @@ let get_fname payload loc =
                      ({pexp_desc = Pexp_ident {txt = Lident "using";_};_},
                       [(Nolabel,{pexp_desc = Pexp_ident{txt=Lident fname;_};_})]);
                  _},_); _}] -> fname
-  | _ -> Format.printf "%a\n%!" Location.print_loc loc;
+  | _ -> Format.printf "%a\n%!" print_loc loc;
          failwith "wrong payload for parse attribute. Should be \"using ident\""
 
 (* get the name of the parsing utility using the payload, and removes
@@ -99,12 +96,15 @@ let open_wide_mapper =
   let handle_expr mapper expr =
     match expr.pexp_desc with
     | Pexp_open(op,exp) ->
+       let loc = expr.pexp_loc in
        (try
-          let modname = fresh_module_name() in
-          let ofs,attrs = deal_with_attr modname expr.pexp_attributes in
-          let exp' = ofs.expr ofs exp in
-          let ope = Pexp_open(op,exp') in
-          {expr with pexp_desc = ope; pexp_attributes = attrs}
+          let m_a = fresh_module_name() in
+          let mapper,attrs = deal_with_attr m_a expr.pexp_attributes in
+          let exp' = mapper.expr mapper exp in
+          let op' = {op with popen_expr = Mod.mk ~loc:loc (Pmod_ident (mkloc (Longident.parse m_a) loc))} in
+          let ope = Pexp_open(op',exp') in
+          let mod_alias = alias_expr (mkloc m_a loc) op.popen_expr.pmod_desc loc (Exp.mk ~loc ope) in
+          {mod_alias with pexp_attributes = attrs}
         with Not_found -> expr)
     |  _ -> default_mapper.expr mapper expr
   in
@@ -113,23 +113,22 @@ let open_wide_mapper =
        be mapped using parse_mapper. Otherwise it keeps using the same mapper *)
     let rec aux (res,map) = function
       | [] -> List.rev res
-      | ({pstr_desc=Pstr_open opd;pstr_loc;_} as h)::tl ->
+      | ({pstr_desc=Pstr_open opd;_} as h)::tl ->
+         let loc = h.pstr_loc in
          (try
             let m_a = fresh_module_name() in
             let map', attrs = deal_with_attr m_a opd.popen_attributes in
-            let mod_alias = alias_pstr m_a opd.popen_expr.pmod_desc pstr_loc in
+            let mod_alias = alias_pstr (mkloc m_a loc) opd.popen_expr.pmod_desc loc in
             let opd' = {opd with popen_attributes = attrs;
-                                 popen_expr = {
-  	                                 pmod_desc = Pmod_ident {txt=Longident.parse m_a; loc=pstr_loc};
-  	                                 pmod_loc = pstr_loc;
-  	                                 pmod_attributes = [];
-                                   }
-                       } in
+                                 popen_expr = Mod.mk ~loc:loc (Pmod_ident (mkloc (Longident.parse m_a) loc));}
+            in
             let h' = {h with pstr_desc = Pstr_open opd'} in
             aux (h'::mod_alias::res,map') tl
           with Not_found -> aux (h::res,map) tl)
       | h::tl ->
-         let h' = map.structure_item map h in
+         let h' = map.structure_item {map with expr = handle_expr} h
+               |> map.structure_item map
+         in
          aux (h'::res,map) tl
     in
     aux ([],mapper)

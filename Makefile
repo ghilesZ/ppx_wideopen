@@ -26,7 +26,7 @@ build:
 	dune build
 
 test:
-	dune runtest
+	dune runtest || (./_build/default/.ppx/ppx_wideopen/ppx.exe tests/test.ml -o lol; cat lol; rm lol; exit 1)
 
 clean:
 	dune clean
