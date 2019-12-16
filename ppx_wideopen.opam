@@ -1,4 +1,12 @@
 opam-version: "2.0"
+maintainer: "Ghiles Ziat <ghiles.ziat@lip6.fr>"
+authors: [
+  "Ghiles Ziat <ghiles.ziat@lip6.fr>"
+]
+homepage: "https://github.com/ghilesZ/parsley"
+bug-reports: "https://github.com/ghilesZ/parsley/issues"
+dev-repo: "git+https://github.com/ghilesZ/parsley"
+
 build: [
   ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]
@@ -11,16 +19,8 @@ depends: [
   "ppxfind"
   "dune"
 ]
-synopsis:
-  "Wideopen is a syntax-extension that allows you to use a custom
-  parsing utility for OCaml's litterals using by default the of_string
-  function of the specified module."
-description: "The shadowing trick allows the users to overwrite the
-usual arithmetic operators (+, -, ...) with their own by simply doing
-let open My_module in .... However the litterals in the program are
-still interpreted as integer or floats by OCaml's parser which forces
-the programmers to write boilerplate code to handle these cases.
-Wideopen is a syntax-extension that allows you to switch easily the
-numeric representation used for integers and floats litterals: it
-allows you to use a custom parsing utility for OCaml's litterals using
-by default the of_string function of the specified module."
+synopsis:"ppw_wideopen syntax extension"
+description:"Wideopen is a syntax-extension that allows you to
+  annotate an open statement in order to use a custom parsing utility
+  for OCaml's litterals using by default the of_string function of the
+  specified module."
