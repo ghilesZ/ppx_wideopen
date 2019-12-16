@@ -12,7 +12,15 @@ depends: [
   "dune"
 ]
 synopsis:
-  "todo"
-description: """
-todo.
-"""
+  "Wideopen is a syntax-extension that allows you to use a custom
+  parsing utility for OCaml's litterals using by default the of_string
+  function of the specified module."
+description: "The shadowing trick allows the users to overwrite the
+usual arithmetic operators (+, -, ...) with their own by simply doing
+let open My_module in .... However the litterals in the program are
+still interpreted as integer or floats by OCaml's parser which forces
+the programmers to write boilerplate code to handle these cases.
+Wideopen is a syntax-extension that allows you to switch easily the
+numeric representation used for integers and floats litterals: it
+allows you to use a custom parsing utility for OCaml's litterals using
+by default the of_string function of the specified module."
