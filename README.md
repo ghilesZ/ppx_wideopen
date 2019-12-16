@@ -1,4 +1,4 @@
-# Why Wideopen?# [![Build Status](https://travis-ci.com/ghilesZ/ppx_wideopen.svg?branch=master)](https://travis-ci.com/ghilesZ/ppx_wideopen)
+# Why Wideopen?[![Build Status](https://travis-ci.com/ghilesZ/ppx_wideopen.svg?branch=master)](https://travis-ci.com/ghilesZ/ppx_wideopen)
 
 The shadowing trick allows the users to overwrite the usual arithmetic
 operators ````(+, -, ...)```` with their own by simply doing ````let
