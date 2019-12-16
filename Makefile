@@ -26,7 +26,16 @@ build:
 	dune build
 
 test:
-	dune runtest || (./_build/default/.ppx/ppx_wideopen/ppx.exe tests/test.ml -o lol; cat lol; rm lol; exit 1)
+	@dune runtest
+	@echo "----------------"
+	@echo "Original Program"
+	@echo "----------------"
+	@cat tests/test.ml
+	@./_build/default/.ppx/ppx_wideopen/ppx.exe tests/test.ml -o rewr
+	@echo "-----------------"
+	@echo "Rewritten Program"
+	@echo "-----------------"
+	@cat rewr; rm rewr
 
 clean:
 	dune clean
