@@ -1,14 +1,14 @@
-# Why Wideopen?
+# Why Wideopen?# [![Build Status](https://travis-ci.com/ghilesZ/ppx_wideopen.svg?branch=master)](https://travis-ci.com/ghilesZ/ppx_wideopen)
+
 The shadowing trick allows the users to overwrite the usual arithmetic
 operators ````(+, -, ...)```` with their own by simply doing ````let
 open My_module in ...````. However the litterals in the program are
 still interpreted as integer or floats by OCaml's parser which forces
 the programmers to write boilerplate code to handle these cases.
 
-Wideopen is a syntax-extension that allows you to switch easily the
-numeric representation used for integers and floats litterals: it
-allows you to use a custom parsing utility for OCaml's litterals using
-by default the `of_string` function of the specified module.
+Wideopen is a syntax-extension that allows you to use a custom parsing
+utility for OCaml's litterals using by default the `of_string`
+function of the specified module.
 
 For example, the following piece of code (which uses the Zarith
 library) computes the number of solutions of a quadratic equation:
