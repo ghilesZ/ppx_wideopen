@@ -1,5 +1,8 @@
-# Why Wideopen?[![Build Status](https://travis-ci.com/ghilesZ/ppx_wideopen.svg?branch=master)](https://travis-ci.com/ghilesZ/ppx_wideopen)
+# Wideopen
 
+[![Build Status](https://travis-ci.com/ghilesZ/ppx_wideopen.svg?branch=master)](https://travis-ci.com/ghilesZ/ppx_wideopen)
+
+## Why?
 The shadowing trick allows the users to overwrite the usual arithmetic
 operators ````(+, -, ...)```` with their own by simply doing ````let
 open My_module in ...````. However the litterals in the program are
@@ -15,7 +18,7 @@ library) computes the number of solutions of a quadratic equation:
 
 ````OCaml
   let nb_solutions a b c =
-    let open[@replace.int] Z in
+    let open[@parse.int] Z in
     let delta = b * b - 4 * a * c in
     if delta > 0 then 2
     else if delta = 0 then 1
@@ -34,7 +37,7 @@ Which is syntactic sugar for:
 ````
 
 ## How it works?
-Whenever an ````[@replace...]```` annotation is met, the litterals
+Whenever an ````[@parse.]```` annotation is met, the litterals
 ````l```` appearing in the sub-expression are replaced with
 ````(of_string l)````. Also, note that as this extension works on the
 Parsetree of OCaml, we are able to handle litterals of arbitrary size
@@ -44,11 +47,11 @@ accepts it.
 ## The different annotations:
 Wideopen provides three different annotation:
 
-- ````[@replace.int]```` which replaces only the integer litterals (the ````Pconst_integers```` constructor of OCaml's ````Parsetree````)
+- ````[@parse.int]```` which replaces only the integer litterals (the ````Pconst_integers```` constructor of OCaml's ````Parsetree````)
   
-- ````[@replace.float]```` which replaces only the float litterals (the ````Pconst_float```` constructor of OCaml's ````Parsetree````)
+- ````[@parse.float]```` which replaces only the float litterals (the ````Pconst_float```` constructor of OCaml's ````Parsetree````)
 
-- ````[@replace.all]```` which replaces both float and integer litterals.
+- ````[@parse.all]```` which replaces both float and integer litterals.
 
 Note that the latter annotation allows you in particular to manipulate
 "integers" and "floats" indiferently as a "bigger type" (Zarith's
@@ -62,7 +65,7 @@ modules, we can specify the name of the function to be used for the
 parsing as in the following example:
 
 ````OCaml
-let open[@replace.all using parse] Mymodule in ...
+let open[@parse.all using parse] Mymodule in ...
 ````
 
 Which parses both integers and floats using the ````parse```` function

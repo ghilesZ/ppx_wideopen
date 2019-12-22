@@ -15,5 +15,6 @@ libexec: [
   "_build/install/default/lib/ppx_wideopen/ppx.exe"
 ]
 doc: [
+  "_build/install/default/doc/ppx_wideopen/LICENSE"
   "_build/install/default/doc/ppx_wideopen/README.md"
 ]
