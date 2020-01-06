@@ -16,13 +16,9 @@ let remove__ s =
       | c   -> Bytes.set s' (i- !nb_cur) c) s;
   Bytes.to_string s'
 
-(* given a module name [Mn] and a function name [fn], builds the identifier
-   [Mn.fn] *)
+(* given a function name [fn], builds the identifier [fn] *)
 let id fname loc =
-  {pexp_desc = Pexp_ident {txt =  Lident fname; loc};
-   pexp_loc_stack = [];
-   pexp_loc = loc;
-   pexp_attributes = [];}
+  Exp.ident ~loc {txt = Lident fname; loc}
 
 (* given an ast fragment representing a string 'c', builds the ast
    fragment for '(fname c)' *)

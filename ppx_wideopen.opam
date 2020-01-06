@@ -14,15 +14,14 @@ build: [
 ]
 depends: [
   "ocaml" {>= "4.04.0"}
-  "ppx_deriving"
   "ppx_tools"
   "ppx_tools_versioned"
   "ppxfind"
   "dune"
   "zarith" {with-test}
 ]
-synopsis:"ppw_wideopen syntax extension"
+synopsis:"Ppx_wideopen syntax extension"
 description:"Wideopen is a syntax-extension that allows you to
   annotate an open statement in order to use a custom parsing utility
-  for OCaml's litterals using by default the of_string function of the
+  for OCaml's litterals. It uses by default the 'of_string' function of the
   specified module."
