@@ -17,23 +17,23 @@ For example, the following piece of code (which uses the Zarith
 library) computes the number of solutions of a quadratic equation:
 
 ````OCaml
-  let nb_solutions a b c =
-    let open[@parse.int] Z in
-    let delta = b * b - 4 * a * c in
-    if delta > 0 then 2
-    else if delta = 0 then 1
-    else 0
+let nb_solutions a b c =
+  let open[@parse.int] Z in
+  let delta = b * b - 4 * a * c in
+  if delta > 0 then 2
+  else if delta = 0 then 1
+  else 0
 ````
 
 Which is syntactic sugar for:
 
 ````OCaml
-  let nb_solutions a b c =
-    let open Z in
-    let delta = (b * b) - (of_string "4") * a * c in
-    if delta > (of_string "0")
-    then of_string "2"
-    else if delta = (of_string "0") then of_string "1" else of_string "0"
+let nb_solutions a b c =
+  let open Z in
+  let delta = (b * b) - (of_string "4") * a * c in
+  if delta > (of_string "0")
+  then of_string "2"
+  else if delta = (of_string "0") then of_string "1" else of_string "0"
 ````
 
 ## How it works?
